@@ -1,5 +1,10 @@
 package com.rfrodriguez.pacman.ai;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+
+import com.badlogic.gdx.scenes.scene2d.ui.List;
 import com.badlogic.gdx.utils.Timer;
 import com.rfrodriguez.pacman.Ghost;
 import com.rfrodriguez.pacman.Ghost.GhostState;
@@ -15,28 +20,38 @@ class StateTransition {
 }
 
 public class StateManager {
-	private Ghost ghost;	
-	private int currentTransitionIndex;
+	private Ghost ghost;
 	private StateTransition currentTransition;
 	private Timer.Task changeTofrightenedEnding, changeToNormal, transitionChange;
 	private GhostState currentState;
 	
+	private StateTransition lastTransition = new StateTransition(Integer.MAX_VALUE, GhostState.chase);
+	
 	private StateTransition[] stateTransitions = {
-			new StateTransition(7, GhostState.scatter),
-			new StateTransition(20, GhostState.chase),
-			new StateTransition(7, GhostState.scatter),
-			new StateTransition(20, GhostState.chase),
-			new StateTransition(5, GhostState.scatter),			
-			new StateTransition(20, GhostState.chase),
-			new StateTransition(5, GhostState.scatter),
-			new StateTransition(Integer.MAX_VALUE, GhostState.chase),			
+		new StateTransition(7, GhostState.scatter),
+		new StateTransition(20, GhostState.chase),
+		new StateTransition(7, GhostState.scatter),
+		new StateTransition(20, GhostState.chase),
+		new StateTransition(5, GhostState.scatter),
+		new StateTransition(20, GhostState.chase),
+		new StateTransition(5, GhostState.scatter),
+		lastTransition
 	};
 	
+	private ArrayList<StateTransition> stateTransitionList = new ArrayList<StateTransition> (
+		Arrays.asList(stateTransitions)
+	);
+	
+	private Iterator<StateTransition> stateIterator;
+	
 	public StateManager(Ghost g){
-		ghost = g;		
-		currentTransitionIndex = 0;
+		ghost = g;
+		currentState = GhostState.stoped;
+		stateIterator = stateTransitionList.iterator();
+	}
+	
+	public void init(){
 		updateTransition();
-		
 		changeTofrightenedEnding = new Timer.Task() {
 			@Override
 			public void run() {}
@@ -48,11 +63,15 @@ public class StateManager {
 	}
 	
 	public void updateTransition(){
-		currentTransition = stateTransitions[currentTransitionIndex++];
-		currentState = currentTransition.state;
-		
-		System.out.println(ghost.name+" current state is "+currentState);
-		setTimer();
+		if(stateIterator.hasNext()){
+			currentTransition = stateIterator.next();
+			currentState = currentTransition.state;			
+			setTimer();
+		}
+		else{
+			currentTransition = lastTransition;
+			currentState = currentTransition.state;
+		}
 	}
 	
 	public void setTimer(){
@@ -70,6 +89,22 @@ public class StateManager {
 	
 	public void kill(){
 		currentState = GhostState.dead;
+	}
+	
+	public void notifyHome(){
+		if(currentState == GhostState.dead){
+			ghost.penalize();			
+		}		
+	}
+	
+	public void penalize(){
+		currentState = GhostState.penalized;
+		Timer.schedule(new Timer.Task() {			
+			@Override
+			public void run() {
+				updateTransition();				
+			}
+		}, 5);
 	}
 	
 	public void setFrightened(){

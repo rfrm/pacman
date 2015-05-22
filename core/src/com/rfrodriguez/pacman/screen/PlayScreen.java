@@ -9,6 +9,7 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
@@ -43,14 +44,28 @@ public class PlayScreen extends ScreenAdapter{
 	private Array<Body> pacDeletionList;
 	private boolean debug;
 	private Map<String, Ghost> ghosts;
+	private boolean gameOver;
+	private int pointCount;
+	private BitmapFont font;
+	private MyMapLoader ml;
+	private boolean needsCleanUp;
+	private boolean gameRunning;
+	private boolean restartAll;
+	private boolean gameWon;
 
 	public PlayScreen(PacmanGame g){
-		game = g;
-		debug = false;
-		batch = new SpriteBatch();		
+		game = g;		
+		debug = true;
+		gameOver = false;
+		gameWon = false;
+		batch = new SpriteBatch();
+		pointCount = 0;
+		gameRunning = false;
+		
+		font = new BitmapFont();
 		
 		camera = new OrthographicCamera();
-		camera.position.set(11.5f*GameVars.PPM, 11.5f*GameVars.PPM, 0);
+		camera.position.set(11.5f*GameVars.PPM, 11.5f*GameVars.PPM, 0);		
 		viewport = new FitViewport(23*GameVars.PPM, 26*GameVars.PPM, camera);
 		viewport.apply();
 		
@@ -58,14 +73,13 @@ public class PlayScreen extends ScreenAdapter{
 		MyContactListener cl = new MyContactListener(this);
 		world.setContactListener(cl);		
 		b2rd = new Box2DDebugRenderer();
-		
-		
-		MyMapLoader ml = new MyMapLoader("assets/map.tmx", world);
-		
+				
+		ml = new MyMapLoader("assets/map.tmx", world);		
 		player = ml.loadPacman();
 		maze = ml.getMaze();
 		ml.loadPacs();
 		ml.loadEnergizers();
+		ml.loadHome();
 		ghosts = ml.getGhosts(maze, player);
 		
 		pacDeletionList = new Array<Body>();
@@ -97,31 +111,88 @@ public class PlayScreen extends ScreenAdapter{
 	
 	private void update(float dt){
 		world.step(0.02f, 6, 2);
+		if(countPacsLeft() == 0){
+			gameRunning = false;
+			gameWon = true;
+			scheduleCleanUp();
+		}
+		
 		handle_keypress();
+		performCleanUp();		
+		
+		if(gameRunning){
+			update_enemies(dt);			
+			destroyEatenPacs();
+		}
+		
 		update_player(dt);
-		update_enemies(dt);
-		destroyEatenPacs();
+				
+		if(restartAll){
+			performRestart();
+		}
+		
+	}
+	private void performCleanUp(){
+		if(needsCleanUp){
+			needsCleanUp = false;
+			for(Ghost ghost: ghosts.values()){
+				ghost.dispose();
+			}
+			ghosts = ml.getGhosts(maze, player);			
+		}
 	}
 	
 	private void handle_keypress(){
-		if(Gdx.input.isKeyPressed(Keys.LEFT) && maze.canMoveLeft(player)){
-			player.moveLeft();
+		if(gameRunning){
+			if(Gdx.input.isKeyPressed(Keys.LEFT) && maze.canMoveLeft(player)){
+				player.moveLeft();
+			}
+			else if(Gdx.input.isKeyPressed(Keys.UP) && maze.canMoveUp(player)) {
+				player.moveUp();
+			}
+			else if(Gdx.input.isKeyPressed(Keys.RIGHT) && maze.canMoveRight(player)){
+				player.moveRigth();
+			}
+			else if(Gdx.input.isKeyPressed(Keys.DOWN) && maze.canMoveDown(player)){
+				player.moveDown();
+			}
+			if(Gdx.input.isKeyPressed(Keys.S)){
+				debug = !debug;
+			}
 		}
-		else if(Gdx.input.isKeyPressed(Keys.UP) && maze.canMoveUp(player)) {
-			player.moveUp();
-		}
-		else if(Gdx.input.isKeyPressed(Keys.RIGHT) && maze.canMoveRight(player)){
-			player.moveRigth();
-		}
-		else if(Gdx.input.isKeyPressed(Keys.DOWN) && maze.canMoveDown(player)){
-			player.moveDown();
-		}
-		
-		if(Gdx.input.isKeyPressed(Keys.S)){
-			debug = !debug;
+		else{
+			if(Gdx.input.isKeyPressed(Keys.P)){
+				if(gameOver || gameWon)
+					setRestartAll();				
+				else				
+					restartGame();
+			}
 		}
 	}
+
+	private void setRestartAll(){		
+		restartAll = true;
+	}
 	
+	private void performRestart()
+	{
+		restartAll = false;
+		pointCount = 0;
+		gameOver = false;
+		gameWon = false;
+		player.dispose();
+		player = ml.loadPacman();
+		restartPacs();
+	}
+	
+	private void restartGame() {
+		gameRunning = true;
+		player.init();
+		for(Ghost ghost: ghosts.values()){
+			ghost.init();
+		}
+	}	
+
 	private void update_player(float dt){
 		player.update(dt);
 	}
@@ -157,7 +228,21 @@ public class PlayScreen extends ScreenAdapter{
 	}
 	
 	private void render_stats(){
-		
+		batch.begin();
+		font.draw(batch, "Puntos: "+pointCount, 1f*GameVars.PPM, 22f*GameVars.PPM);
+		font.draw(batch, "Vidas restantes: "+Math.max(0, player.lives), 17f*GameVars.PPM, 22f*GameVars.PPM);
+		if(!gameRunning)
+			if(gameOver){
+				font.draw(batch, "GAME OVER", 8f*GameVars.PPM, 22f*GameVars.PPM);
+				font.draw(batch, "Presiona P para reiniciar", 7f*GameVars.PPM, -0.6f*GameVars.PPM);
+			}
+			if(gameWon){
+				font.draw(batch, "¡Ganaste!", 8f*GameVars.PPM, 22f*GameVars.PPM);
+				font.draw(batch, "Presiona P para reiniciar", 7f*GameVars.PPM, -0.6f*GameVars.PPM);				
+			}
+			else
+				font.draw(batch, "Presiona P para comenzar a jugar", 7f*GameVars.PPM, -0.3f*GameVars.PPM);
+		batch.end();
 	}
 	
 	private void render_pacs(){
@@ -185,7 +270,7 @@ public class PlayScreen extends ScreenAdapter{
 		for(int i=0;i<pacDeletionList.size;i++){
 			Body pac = pacDeletionList.get(i);
 			world.destroyBody(pac);
-			//pointCount += 50;
+			pointCount += 50;
 		}
 		pacDeletionList.clear();		
 	}
@@ -206,7 +291,59 @@ public class PlayScreen extends ScreenAdapter{
 				if(ghost.isFrightened()){
 					ghost.kill();
 				}
+				else{
+					player.kill();
+					playerLostLive();
+					scheduleCleanUp();
+				}
 			}
 		}
+	}
+
+	private void scheduleCleanUp(){
+		needsCleanUp = true;
+		gameRunning = false;
+	}
+	
+	public void playerLostLive(){
+		if(player.lives == -1){
+			gameOver = true;			
+		}
+	}
+	
+	public void notifyHome(){
+		for(Ghost ghost: ghosts.values()){
+			if(ghost.inHome())
+				ghost.notifyHome();
+		}
+	}
+	
+	public void restartPacs(){
+		Array<Body> bodies = new Array<Body>();	
+		world.getBodies(bodies);
+	
+		for(Body body: bodies) {
+			Fixture bodyFixture = body.getFixtureList().first(); 
+			if(bodyFixture.getUserData().equals("pac") || bodyFixture.getUserData().equals("energizer")) {
+				world.destroyBody(body);				
+			}
+		}
+		ml.loadPacs();
+		ml.loadEnergizers();
+	}
+	
+	public int countPacsLeft(){
+		int count = 0;
+		Array<Body> bodies = new Array<Body>();	
+		world.getBodies(bodies);
+	
+		for(Body body: bodies) {
+			Fixture bodyFixture = body.getFixtureList().first(); 
+			if(bodyFixture.getUserData().equals("pac") || bodyFixture.getUserData().equals("energizer")) {
+				count++;				
+			}
+		}
+		System.out.println(count-149);
+		return count-149;
 	}
 }

@@ -6,22 +6,32 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Filter;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
+import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory.Woodstox;
 
 import data.GameVars;
 import data.GameVars.Direction;
 
 public class PacMan extends Player {	
 	public Direction currentDirection;	
-	public TextureRegion currentFrame;	
-	
+	public TextureRegion currentFrame;
+	public boolean dead;
 	float stateTime;
+	public int lives;
+	private boolean stoped;
+	private World world;
 	
 	public PacMan(World world, Vector2 startPosition, AnimationLoader animationLoader){
 		super(animationLoader);
-		stateTime = 0;	
-		
+		lives = 2;
+		stateTime = 0;
+		dead = false;
+		stoped = true;
+		this.world = world;
+
 		currentDirection = Direction.up;
 		
 		BodyDef bdef = new BodyDef();
@@ -37,6 +47,17 @@ public class PacMan extends Player {
 		fdef.filter.categoryBits = GameVars.BIT_PACMAN;
 		fdef.filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_PAC | GameVars.BIT_ENERGIZER | GameVars.BIT_GHOST;		
 		playerBody.createFixture(fdef).setUserData("pacman");
+		
+		update(0);
+	}
+	
+	public void init(){
+		stoped = false;
+		dead = false;
+		Fixture f = playerBody.getFixtureList().first();
+		Filter filter = f.getFilterData();
+		filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_PAC | GameVars.BIT_ENERGIZER | GameVars.BIT_GHOST;
+		f.setFilterData(filter);	
 	}
 
 	public void moveLeft() {
@@ -59,34 +80,59 @@ public class PacMan extends Player {
 		currentDirection = Direction.stoped;
 	}
 	
+	public void kill() {
+		lives--;
+		dead = true;
+		Fixture f = playerBody.getFixtureList().first();
+		Filter filter = f.getFilterData();
+		filter.maskBits = GameVars.BIT_MAZE;
+		f.setFilterData(filter);
+	}
+	
 	public void update(float dt) {
 		
 		stateTime += dt;
-		currentFrame = getCurrentAnimation().getKeyFrame(stateTime, true);
+		boolean looping = !dead;
+		currentFrame = getCurrentAnimation().getKeyFrame(stateTime, looping);
 		
 	    if(currentDirection == Direction.left)
-	    	playerBody.setLinearVelocity(-5*GameVars.PPM, 0);
+	    	playerBody.setLinearVelocity(-1*getVelocity()*GameVars.PPM, 0);
 	    else if(currentDirection == Direction.up)	    
-	    	playerBody.setLinearVelocity(0, 5*GameVars.PPM);
+	    	playerBody.setLinearVelocity(0, getVelocity()*GameVars.PPM);
 	    else if(currentDirection == Direction.right)
-	    	playerBody.setLinearVelocity(5*GameVars.PPM, 0);
+	    	playerBody.setLinearVelocity(getVelocity()*GameVars.PPM, 0);
 	    else if(currentDirection == Direction.down)
-	    	playerBody.setLinearVelocity(0, -5*GameVars.PPM);
+	    	playerBody.setLinearVelocity(0, -1*getVelocity()*GameVars.PPM);
 	    else if(currentDirection == Direction.stoped)
 	    	playerBody.setLinearVelocity(0, 0);
+	}
+	
+	public float getVelocity(){
+		if(dead || stoped)
+			return 0;
+		return 5;
+	}
+	
+	public void dispose(){
+		world.destroyBody(playerBody);
 	}
 
 	@Override
 	protected Animation getCurrentAnimation() {
 		Animation animation = null;
-		if(currentDirection==Direction.left)
-			animation = animations.get("normal_left");
-		else if(currentDirection==Direction.up)
-			animation = animations.get("normal_up");
-		else if(currentDirection==Direction.right)
-			animation = animations.get("normal_right");
-		else if(currentDirection==Direction.down)
-			animation = animations.get("normal_down");
+		if(dead){
+			animation = animations.get("dead");
+		}
+		else{
+			if(currentDirection==Direction.left)
+				animation = animations.get("normal_left");
+			else if(currentDirection==Direction.up)
+				animation = animations.get("normal_up");
+			else if(currentDirection==Direction.right)
+				animation = animations.get("normal_right");
+			else if(currentDirection==Direction.down)
+				animation = animations.get("normal_down");
+		}
 		return animation;
 	}
 }

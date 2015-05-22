@@ -20,22 +20,26 @@ import data.GameVars.Direction;
 
 public class Ghost extends Player {
 	public String name;
-	public enum GhostState {scatter, chase, frightened, frightened_ending, dead, resurrected};
+	public enum GhostState {stoped, scatter, chase, frightened, frightened_ending, dead, penalized};
 
 	float delta;
 	private GhostAI chase_ai, scatter_ai, dead_ai;	
 	public Direction currentDirection;	
-	private Vector2 startPostion;
+	private Vector2 startPostion, homeTarget;
 	private StateManager sm;
 	private float stateTime;
+	private World world;
 	
-	public Ghost(String name, Vector2 startPosition, Vector2 homeTarget, Vector2 scatterTarget, World w, Maze m, AnimationLoader animationLoader, GhostAI chaseAI){
+	public Ghost(String name, Vector2 startPosition, Vector2 homeTarget, Vector2 scatterTarget, World w, Maze m, AnimationLoader animationLoader, GhostAI chaseAI){		
 		super(animationLoader);
+		world = w;
 		this.name = name;
+		this.homeTarget = homeTarget;
 		this.startPostion = startPosition;
 		createBody(w);
 		
-		sm = new StateManager(this);	
+		sm = new StateManager(this);
+		
 		currentDirection = Direction.up;
 		stateTime = 0;
 		
@@ -47,6 +51,12 @@ public class Ghost extends Player {
 		
 		dead_ai = new DeadAI(m, homeTarget);
 		dead_ai.setGhost(this);
+		
+		update(0);
+	}
+	
+	public void init(){
+		sm.init();
 	}
 	
 	public boolean isNormal(){
@@ -62,14 +72,34 @@ public class Ghost extends Player {
 		return getPosition().sub(p.getPosition()).len()/GameVars.PPM <= 1.1;
 	}
 	
-	public TextureRegion getSprite(){
+	public TextureRegion getSprite(){ 
 		return getCurrentAnimation().getKeyFrame(stateTime, true);
+	}
+	
+	public void penalize(){
+		Fixture f = playerBody.getFixtureList().first();
+		Filter filter = f.getFilterData();
+		filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_PACMAN | GameVars.BIT_HOME;
+		f.setFilterData(filter);		
+		sm.penalize();
+	}
+	
+	public void notifyHome(){
+		sm.notifyHome();
+	}
+	
+	public void backToHome(){
+		sm = new StateManager(this);
+	}
+	
+	public boolean inHome(){
+		return getPosition().sub(homeTarget).len() <= 1*GameVars.PPM;
 	}
 	
 	public void kill(){
 		Fixture f = playerBody.getFixtureList().first();
 		Filter filter = f.getFilterData();
-		filter.maskBits = GameVars.BIT_MAZE;
+		filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_HOME;
 		f.setFilterData(filter);		
 		sm.kill();
 	}
@@ -107,6 +137,7 @@ public class Ghost extends Player {
 			ai = chase_ai;
 			break;
 		case dead:
+		case penalized:
 			ai = dead_ai;
 			break;
 		default:
@@ -116,10 +147,11 @@ public class Ghost extends Player {
 	}
 
 	private float getVelocity(){
-		GhostState currentState = currentState(); 	
-		if(currentState == GhostState.frightened || currentState == GhostState.frightened_ending){
-			return 2f;			
-		}
+		GhostState currentState = currentState();
+		if(currentState == GhostState.stoped)
+			return 0;
+		else if(currentState == GhostState.frightened || currentState == GhostState.frightened_ending)
+			return 2f;
 		else
 			return 5f;
 	}
@@ -138,7 +170,7 @@ public class Ghost extends Player {
 		fdef.shape = circleShape;
 		fdef.friction = 0;				
 		fdef.filter.categoryBits = GameVars.BIT_GHOST;
-		fdef.filter.maskBits = GameVars.BIT_PACMAN | GameVars.BIT_MAZE;
+		fdef.filter.maskBits = GameVars.BIT_PACMAN | GameVars.BIT_MAZE | GameVars.BIT_HOME;
 		playerBody.createFixture(fdef).setUserData("ghost");
 	}
 	
@@ -176,5 +208,9 @@ public class Ghost extends Player {
 				animation = animations.get("normal_down");
 		}
 		return animation; 
+	}
+	
+	public void dispose(){
+		world.destroyBody(playerBody);
 	}
 }

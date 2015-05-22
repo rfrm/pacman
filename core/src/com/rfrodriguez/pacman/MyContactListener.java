@@ -25,7 +25,7 @@ public class MyContactListener implements ContactListener{
 				e.printStackTrace();
 			}
 		}
-		if(isContactBetween(contact, "pacman", "energizer")){
+		else if(isContactBetween(contact, "pacman", "energizer")){
 			try {
 				playScreen.addToDeletionList(getBody(contact, "energizer"));
 				playScreen.beginFrightenedMode();
@@ -33,12 +33,11 @@ public class MyContactListener implements ContactListener{
 				e.printStackTrace();
 			}
 		}
-		if(isContactBetween(contact, "pacman", "ghost")){
-			try {
-				playScreen.checkGhostPacmanContact();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+		else if(isContactBetween(contact, "pacman", "ghost")){
+			playScreen.checkGhostPacmanContact();
+		}
+		else if(isContactBetween(contact, "home", "ghost")){
+			playScreen.notifyHome();
 		}
 	}
 

@@ -136,6 +136,29 @@ public class MyMapLoader {
 		}
 	}
 	
+	public void loadHome(){
+		Body box;
+		FixtureDef fdef = new FixtureDef();
+		BodyDef bdef = new BodyDef();
+		
+		Ellipse home = ((EllipseMapObject) map.getLayers().get("home").getObjects().get("home")).getEllipse();
+		bdef = new BodyDef();
+		bdef.position.set(home.x, home.y);
+		bdef.type = BodyType.StaticBody;
+		box = world.createBody(bdef);
+		CircleShape cshape = new CircleShape();
+		cshape.setRadius(0.3f*GameVars.PPM);
+		
+		fdef = new FixtureDef();
+		fdef.shape = cshape;
+		fdef.friction = 0;
+		fdef.isSensor = true;
+		fdef.filter.categoryBits = GameVars.BIT_HOME;
+		fdef.filter.maskBits = GameVars.BIT_GHOST ;
+		box.createFixture(fdef).setUserData("home");
+		
+	}
+	
 	public Map<String, Ghost> getGhosts(Maze maze, PacMan p){
 		String ghostName;
 		EllipseMapObject startPositionEllipseObject;		
@@ -270,6 +293,13 @@ public class MyMapLoader {
 				animations.put("normal_up", new Animation(0.15f, new TextureRegion[] {sprites[6][1], sprites[6][3]}));
 				animations.put("normal_right", new Animation(0.15f, new TextureRegion[] {sprites[2][12], sprites[2][14]}));
 				animations.put("normal_down", new Animation(0.15f, new TextureRegion[] {sprites[2][13], sprites[2][15]}));
+				
+				Animation dead =  new Animation(0.5f, 
+					new TextureRegion[] {sprites[3][4], sprites[3][5], sprites[3][6], sprites[3][7], sprites[3][8],
+						sprites[3][9], sprites[3][10], sprites[3][11], sprites[3][12], sprites[3][13], sprites[3][14]});
+				dead.setPlayMode(Animation.PlayMode.NORMAL);
+				animations.put("dead", dead);
+				
 				return animations;
 			}			
 		});

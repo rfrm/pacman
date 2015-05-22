@@ -14,20 +14,10 @@ public class PacmanGame extends Game {
 	public void create () {
 		playScreen= new PlayScreen(this);
 		setScreen(playScreen);
-		
-
-//		fpsDisplay = new BitmapFont();
-//
-//		
 //		bgMusic = Gdx.audio.newMusic(Gdx.files.internal("assets/sounds/bg.mp3"));
 //		bgMusic.play();
 	}
 
-//		
-		
-//		
-//		fpsDisplay.draw(batch, ""+pointCount, 1f*GameVars.PPM, 22f*GameVars.PPM);
-	
 	public void render(){		
 		getScreen().render(Gdx.graphics.getDeltaTime());
 	}
