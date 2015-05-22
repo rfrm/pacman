@@ -294,7 +294,7 @@ public class MyMapLoader {
 				animations.put("normal_right", new Animation(0.15f, new TextureRegion[] {sprites[2][12], sprites[2][14]}));
 				animations.put("normal_down", new Animation(0.15f, new TextureRegion[] {sprites[2][13], sprites[2][15]}));
 				
-				Animation dead =  new Animation(0.5f, 
+				Animation dead =  new Animation(0.125f, 
 					new TextureRegion[] {sprites[3][4], sprites[3][5], sprites[3][6], sprites[3][7], sprites[3][8],
 						sprites[3][9], sprites[3][10], sprites[3][11], sprites[3][12], sprites[3][13], sprites[3][14]});
 				dead.setPlayMode(Animation.PlayMode.NORMAL);

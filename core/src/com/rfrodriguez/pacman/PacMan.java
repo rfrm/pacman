@@ -10,7 +10,6 @@ import com.badlogic.gdx.physics.box2d.Filter;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
-import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory.Woodstox;
 
 import data.GameVars;
 import data.GameVars.Direction;
@@ -25,6 +24,7 @@ public class PacMan extends Player {
 	public int lives;	
 	private World world;
 	private PacmanState currentState;
+	private Vector2 startPosition;
 	
 	public PacMan(World world, Vector2 startPosition, AnimationLoader animationLoader){
 		super(animationLoader);
@@ -32,9 +32,13 @@ public class PacMan extends Player {
 		stateTime = 0;
 		currentState = PacmanState.stoped;
 		this.world = world;
-
+		this.startPosition = startPosition;
 		currentDirection = Direction.up;
-		
+		createBody();
+		update(0);
+	}
+	
+	private void createBody(){
 		BodyDef bdef = new BodyDef();
 		FixtureDef fdef = new FixtureDef();
 		
@@ -47,9 +51,7 @@ public class PacMan extends Player {
 		fdef.shape = circleShape;
 		fdef.filter.categoryBits = GameVars.BIT_PACMAN;
 		fdef.filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_PAC | GameVars.BIT_ENERGIZER | GameVars.BIT_GHOST;		
-		playerBody.createFixture(fdef).setUserData("pacman");
-		
-		update(0);
+		playerBody.createFixture(fdef).setUserData("pacman");		
 	}
 	
 	public void init(){
@@ -80,6 +82,11 @@ public class PacMan extends Player {
 		currentState = PacmanState.stoped;		
 	}
 	
+	public void toHome(){
+		world.destroyBody(playerBody);
+		createBody();
+	}
+	
 	public void kill() {
 		lives--;
 		currentState = PacmanState.dead;
@@ -93,7 +100,7 @@ public class PacMan extends Player {
 		
 		stateTime += dt;
 		boolean looping = currentState != PacmanState.dead ? true : false; 
-		currentFrame = getCurrentAnimation().getKeyFrame(stateTime, looping);
+		currentFrame = getCurrentAnimation().getKeyFrame(stateTime, true);
 		
 		if(currentState == PacmanState.eating){
 		    if(currentDirection == Direction.left)
@@ -117,6 +124,7 @@ public class PacMan extends Player {
 	
 	public void dispose(){
 		world.destroyBody(playerBody);
+		createBody();
 	}
 
 	@Override

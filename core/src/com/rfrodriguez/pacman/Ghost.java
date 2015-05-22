@@ -64,7 +64,8 @@ public class Ghost extends Player {
 	}
 	
 	public boolean isFrightened(){
-		return currentState() == GhostState.frightened || currentState() == GhostState.frightened_ending;
+		GhostState currentState = currentState(); 
+		return currentState == GhostState.frightened || currentState == GhostState.frightened_ending;
 	}
 	
 	public boolean inContact(PacMan p){
@@ -178,20 +179,21 @@ public class Ghost extends Player {
 		playerBody.createFixture(fdef).setUserData("ghost");
 	}
 	
-	private GhostState currentState(){
+	public GhostState currentState(){
 		return sm.currentState();
 	}
 
 	@Override
 	protected Animation getCurrentAnimation() {
 		Animation animation = null;
-		if(currentState() == GhostState.frightened){
+		GhostState currentState = currentState(); 
+		if(currentState == GhostState.frightened){
 			animation = animations.get("frightened");
 		}
-		else if(currentState() == GhostState.frightened_ending){
+		else if(currentState == GhostState.frightened_ending){
 			animation = animations.get("frightened_ending");
 		}
-		else if(currentState() == GhostState.dead){
+		else if(currentState == GhostState.dead){
 			if(currentDirection==Direction.left)
 				animation = animations.get("dead_left");
 			else if(currentDirection==Direction.up)

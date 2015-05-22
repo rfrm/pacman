@@ -1,6 +1,5 @@
 package com.rfrodriguez.pacman.screen;
 
-import java.util.ArrayList;
 import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
@@ -19,6 +18,7 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.rfrodriguez.pacman.Ghost;
@@ -116,12 +116,13 @@ public class PlayScreen extends ScreenAdapter{
 	public void checkGhostPacmanContact(){
 		for(Ghost ghost: ghosts.values()){
 			if(ghost.inContact(player)){
-				if(ghost.isFrightened()){
-					ghost.kill();
-				}
-				else{
+				if(ghost.isNormal()){
+					System.out.println(ghost.name+" Killed pacman because "+ghost.isFrightened()+" and "+ghost.currentState());
 					player.kill();
 					playerLostLive();
+				}
+				else{
+					ghost.kill();					
 				}
 			}
 		}
@@ -132,14 +133,13 @@ public class PlayScreen extends ScreenAdapter{
 			if(ghost.inHome())
 				ghost.notifyHome();
 		}
-	}
-	
+	}	
 	
 	private void update(float dt){
 		world.step(0.02f, 6, 2);
-		handle_keypress();		
-		if(current_state == GameState.running){
-			update_player(dt);
+		handle_keypress();
+		update_player(dt);
+		if(current_state == GameState.running){			
 			update_enemies(dt);
 			destroyEatenPacs();
 			
@@ -204,7 +204,6 @@ public class PlayScreen extends ScreenAdapter{
 	}
 	
 	private void nextLevel(){
-		//current_state = GameState.notStarted;
 		beginGame();
 	}
 	
@@ -212,15 +211,17 @@ public class PlayScreen extends ScreenAdapter{
 		stopAll();
 		restartGhosts();
 		restartPacs();
-		pacmanToHome();		
+		pacmanToHome();
 	}
 	
 	private void pacmanToHome(){
-		
+		player.toHome();
 	}
 	
 	private void handleGameOver(){
-		
+		handleGameOver = false;
+		stopAll();
+		pacmanToHome();
 	}
 	
 	private void beginGame(){
@@ -303,7 +304,6 @@ public class PlayScreen extends ScreenAdapter{
 		if(player.lives == -1){
 			handleGameOver = true;
 			current_state = GameState.gameOver;
-			
 		}
 		else{
 			handleLostLife = true;
@@ -313,7 +313,14 @@ public class PlayScreen extends ScreenAdapter{
 	
 	private void handleLostLife(){
 		handleLostLife = false;
-		restartGhosts();
+		Timer.schedule(new Timer.Task() {
+			@Override
+			public void run() {
+				pacmanToHome();
+				restartGhosts();
+				restartGame();
+			}
+		}, 1);
 	}
 
 	private void restartGhosts() {
@@ -334,9 +341,9 @@ public class PlayScreen extends ScreenAdapter{
 				count++;				
 			}
 		}
-		return count;// - 145;
+		return count;
 	}
-	
+
 	private void destroyEatenPacs(){
 		for(int i=0;i<pacDeletionList.size;i++){
 			Body pac = pacDeletionList.get(i);
@@ -345,7 +352,7 @@ public class PlayScreen extends ScreenAdapter{
 		}
 		pacDeletionList.clear();		
 	}
-	
+
 	private void render_stats(){
 		batch.begin();
 		font.draw(batch, "Puntos: "+pointCount, 1f*GameVars.PPM, 22f*GameVars.PPM);
@@ -363,7 +370,7 @@ public class PlayScreen extends ScreenAdapter{
 		
 		batch.end();
 	}	
-	
+
 	private void render_pacs(){
 		Fixture bodyFixture;
 		Array<Body> bodies = new Array<Body>();
@@ -384,7 +391,7 @@ public class PlayScreen extends ScreenAdapter{
 		}
 		sr.end();
 	}
-	
+
     public void restartPacs(){
     	Array<Body> bodies = new Array<Body>();
     	world.getBodies(bodies);

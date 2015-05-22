@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import com.badlogic.gdx.scenes.scene2d.ui.List;
 import com.badlogic.gdx.utils.Timer;
 import com.rfrodriguez.pacman.Ghost;
 import com.rfrodriguez.pacman.Ghost.GhostState;
@@ -28,9 +27,9 @@ public class StateManager {
 	private StateTransition lastTransition = new StateTransition(Integer.MAX_VALUE, GhostState.chase);
 	
 	private StateTransition[] stateTransitions = {
-		new StateTransition(7, GhostState.scatter),
+		new StateTransition(5, GhostState.scatter),
 		new StateTransition(20, GhostState.chase),
-		new StateTransition(7, GhostState.scatter),
+		new StateTransition(5, GhostState.scatter),
 		new StateTransition(20, GhostState.chase),
 		new StateTransition(5, GhostState.scatter),
 		new StateTransition(20, GhostState.chase),
@@ -109,7 +108,7 @@ public class StateManager {
 			public void run() {
 				updateTransition();				
 			}
-		}, 5);
+		}, 3);
 	}
 	
 	public void setFrightened(){
@@ -121,7 +120,7 @@ public class StateManager {
 				public void run() {				 
 					setFrightenedEnding();
 				}
-			}, 12);
+			}, 7);
 		}
 	}
 	
