@@ -62,6 +62,11 @@ public class StateManager {
 		};
 	}
 	
+	public void stop(){
+		cancellTaks();
+		currentState = GhostState.stoped;
+	}
+	
 	public void updateTransition(){
 		if(stateIterator.hasNext()){
 			currentTransition = stateIterator.next();
@@ -134,8 +139,22 @@ public class StateManager {
 	}
 	
 	private void cancellTaks(){
-		changeToNormal.cancel();
-		transitionChange.cancel();
-		changeTofrightenedEnding.cancel();
+		try{
+			changeToNormal.cancel();	
+		} catch (NullPointerException e){
+			
+		}
+		
+		try{
+			transitionChange.cancel();				
+		} catch (NullPointerException e){
+			
+		}
+		
+		try{
+			changeTofrightenedEnding.cancel();				
+		} catch (NullPointerException e){
+			
+		}
 	}
 }

@@ -15,21 +15,22 @@ import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory.Woodstox;
 import data.GameVars;
 import data.GameVars.Direction;
 
-public class PacMan extends Player {	
+public class PacMan extends Player {
+	
+	public enum PacmanState {stoped, eating, dead};
+	
 	public Direction currentDirection;	
 	public TextureRegion currentFrame;
-	public boolean dead;
 	float stateTime;
-	public int lives;
-	private boolean stoped;
+	public int lives;	
 	private World world;
+	private PacmanState currentState;
 	
 	public PacMan(World world, Vector2 startPosition, AnimationLoader animationLoader){
 		super(animationLoader);
 		lives = 2;
 		stateTime = 0;
-		dead = false;
-		stoped = true;
+		currentState = PacmanState.stoped;
 		this.world = world;
 
 		currentDirection = Direction.up;
@@ -52,8 +53,7 @@ public class PacMan extends Player {
 	}
 	
 	public void init(){
-		stoped = false;
-		dead = false;
+		currentState = PacmanState.eating;
 		Fixture f = playerBody.getFixtureList().first();
 		Filter filter = f.getFilterData();
 		filter.maskBits = GameVars.BIT_MAZE | GameVars.BIT_PAC | GameVars.BIT_ENERGIZER | GameVars.BIT_GHOST;
@@ -76,13 +76,13 @@ public class PacMan extends Player {
 		currentDirection = Direction.down;
 	}
 	
-	public void stop() {
-		currentDirection = Direction.stoped;
+	public void stop() {		
+		currentState = PacmanState.stoped;		
 	}
 	
 	public void kill() {
 		lives--;
-		dead = true;
+		currentState = PacmanState.dead;
 		Fixture f = playerBody.getFixtureList().first();
 		Filter filter = f.getFilterData();
 		filter.maskBits = GameVars.BIT_MAZE;
@@ -92,25 +92,27 @@ public class PacMan extends Player {
 	public void update(float dt) {
 		
 		stateTime += dt;
-		boolean looping = !dead;
+		boolean looping = currentState != PacmanState.dead ? true : false; 
 		currentFrame = getCurrentAnimation().getKeyFrame(stateTime, looping);
 		
-	    if(currentDirection == Direction.left)
-	    	playerBody.setLinearVelocity(-1*getVelocity()*GameVars.PPM, 0);
-	    else if(currentDirection == Direction.up)	    
-	    	playerBody.setLinearVelocity(0, getVelocity()*GameVars.PPM);
-	    else if(currentDirection == Direction.right)
-	    	playerBody.setLinearVelocity(getVelocity()*GameVars.PPM, 0);
-	    else if(currentDirection == Direction.down)
-	    	playerBody.setLinearVelocity(0, -1*getVelocity()*GameVars.PPM);
-	    else if(currentDirection == Direction.stoped)
-	    	playerBody.setLinearVelocity(0, 0);
-	}
-	
-	public float getVelocity(){
-		if(dead || stoped)
-			return 0;
-		return 5;
+		if(currentState == PacmanState.eating){
+		    if(currentDirection == Direction.left)
+		    	playerBody.setLinearVelocity(-5*GameVars.PPM, 0);
+		    else if(currentDirection == Direction.up)	    
+		    	playerBody.setLinearVelocity(0, 5*GameVars.PPM);
+		    else if(currentDirection == Direction.right)
+		    	playerBody.setLinearVelocity(5*GameVars.PPM, 0);
+		    else if(currentDirection == Direction.down)
+		    	playerBody.setLinearVelocity(0, -5*GameVars.PPM);
+		    else if(currentDirection == Direction.stoped)
+		    	playerBody.setLinearVelocity(0, 0);
+		}
+		else if(currentState == PacmanState.stoped){
+			playerBody.setLinearVelocity(0, 0);
+		}
+		else if(currentState == PacmanState.dead){
+			playerBody.setLinearVelocity(0, 0);
+		}
 	}
 	
 	public void dispose(){
@@ -120,9 +122,11 @@ public class PacMan extends Player {
 	@Override
 	protected Animation getCurrentAnimation() {
 		Animation animation = null;
-		if(dead){
+		if(currentState == PacmanState.dead){
 			animation = animations.get("dead");
 		}
+		else if(currentState == PacmanState.stoped)
+			animation = animations.get("stoped");
 		else{
 			if(currentDirection==Direction.left)
 				animation = animations.get("normal_left");
@@ -132,6 +136,8 @@ public class PacMan extends Player {
 				animation = animations.get("normal_right");
 			else if(currentDirection==Direction.down)
 				animation = animations.get("normal_down");
+			else if(currentDirection==Direction.stoped)
+				animation = animations.get("stoped");
 		}
 		return animation;
 	}

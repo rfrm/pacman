@@ -84,6 +84,10 @@ public class Ghost extends Player {
 		sm.penalize();
 	}
 	
+	public void stop(){
+		sm.stop();
+	}
+	
 	public void notifyHome(){
 		sm.notifyHome();
 	}

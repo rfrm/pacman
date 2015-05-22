@@ -300,6 +300,8 @@ public class MyMapLoader {
 				dead.setPlayMode(Animation.PlayMode.NORMAL);
 				animations.put("dead", dead);
 				
+				animations.put("stoped", new Animation(0.15f, new TextureRegion[] {sprites[3][0]}));
+				
 				return animations;
 			}			
 		});
