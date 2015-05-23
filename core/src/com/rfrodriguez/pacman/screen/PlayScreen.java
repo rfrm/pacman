@@ -17,6 +17,7 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -27,6 +28,8 @@ import com.rfrodriguez.pacman.MyContactListener;
 import com.rfrodriguez.pacman.MyMapLoader;
 import com.rfrodriguez.pacman.PacMan;
 import com.rfrodriguez.pacman.PacmanGame;
+import com.rfrodriguez.pacman.ScoreHandler;
+import com.rfrodriguez.pacman.ScoreService;
 
 import data.GameVars;
 
@@ -53,40 +56,43 @@ public class PlayScreen extends ScreenAdapter{
 	private boolean handleLostLife;
 	private boolean handleGameOver;
 	
+	private Stage stage = new Stage();
+	
 	public PlayScreen(PacmanGame g){
 		game = g;
-		debug = false;				
-		
 		batch = new SpriteBatch();
 		font = new BitmapFont();
+	}
+	
+	public void show(){
+		debug = false;
 		
-		camera = new OrthographicCamera();
+		camera = (OrthographicCamera) stage.getCamera();
 		camera.position.set(11.5f*GameVars.PPM, 11.5f*GameVars.PPM, 0);		
-		viewport = new FitViewport(23*GameVars.PPM, 26*GameVars.PPM, camera);
-		viewport.apply();
+		camera.update();		
+		batch.setProjectionMatrix(camera.combined);
 		
 		world = new World(new Vector2(0, 0), true);
 		MyContactListener cl = new MyContactListener(this);
 		world.setContactListener(cl);		
 		b2rd = new Box2DDebugRenderer();
-				
-		ml = new MyMapLoader("assets/map.tmx", world);
-		initializeGame();
-	
+		
 		pacDeletionList = new Array<Body>();
 		
 		sr = new ShapeRenderer();
 		sr.setProjectionMatrix(camera.combined);
 		
 		handleLostLife = false;
-		handleGameOver = false;
-	}
-	
-	public void show(){
+		handleGameOver = false;		
 		
+		ml = new MyMapLoader("assets/map.tmx", world);
+		initializeGame();
+		
+		System.out.println("Init");
 	}
 	
-	public void render(float dt){	
+	public void render(float dt){		
+		
 		update(dt);		
 
 		Gdx.gl.glClearColor(0, 0, 0, 1);
@@ -222,6 +228,14 @@ public class PlayScreen extends ScreenAdapter{
 		handleGameOver = false;
 		stopAll();
 		pacmanToHome();
+		
+		ScoreHandler sh = ScoreService.loadScoreHandler();
+		if(sh.isBestScore(pointCount)){
+			game.goToAddNewScore(pointCount);
+		}
+		else{
+			game.menu();			
+		}
 	}
 	
 	private void beginGame(){
@@ -313,6 +327,7 @@ public class PlayScreen extends ScreenAdapter{
 	
 	private void handleLostLife(){
 		handleLostLife = false;
+		stopAll();
 		Timer.schedule(new Timer.Task() {
 			@Override
 			public void run() {

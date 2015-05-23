@@ -19,7 +19,6 @@ public abstract class Player {
 	public Vector2 getPosition(){
 		return playerBody.getPosition();
 	}	
-	
-	
+		
 	protected abstract Animation getCurrentAnimation();
 }

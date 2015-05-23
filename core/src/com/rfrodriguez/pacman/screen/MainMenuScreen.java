@@ -27,7 +27,6 @@ public class MainMenuScreen extends ScreenAdapter {
 		
 		Gdx.input.setInputProcessor(stage);// Make the stage consume events
 
-		//createBasicSkin();
 		TextButton newGameButton = new TextButton("Jugar", skin, "default"); 
 		newGameButton.setWidth(200);		
 		newGameButton.setPosition(
@@ -41,18 +40,25 @@ public class MainMenuScreen extends ScreenAdapter {
             }
         });
 		
-		TextButton newOnlineGameButton = new TextButton("Jugar VS", skin, "default"); 
-		newOnlineGameButton.setWidth(200);		
-		newOnlineGameButton.setPosition(
-				(Gdx.graphics.getWidth() - newOnlineGameButton.getWidth())/2,
-				0.20f*Gdx.graphics.getHeight());
-		stage.addActor(newOnlineGameButton);
+//		TextButton newOnlineGameButton = new TextButton("Jugar VS", skin, "default"); 
+//		newOnlineGameButton.setWidth(200);		
+//		newOnlineGameButton.setPosition(
+//				(Gdx.graphics.getWidth() - newOnlineGameButton.getWidth())/2,
+//				0.20f*Gdx.graphics.getHeight());
+//		stage.addActor(newOnlineGameButton);
 		
 		TextButton bestScoresButton = new TextButton("Mejores puntajes", skin, "default"); 
 		bestScoresButton.setWidth(200);		
 		bestScoresButton.setPosition(
 				(Gdx.graphics.getWidth() - bestScoresButton.getWidth())/2,
-				 0.15f*Gdx.graphics.getHeight());		
+				 0.20f*Gdx.graphics.getHeight());
+		bestScoresButton.addListener(new ClickListener(){
+			@Override
+			public void clicked(InputEvent event, float x, float y){
+				game.goToBestScoreScreen();
+			}
+		});
+		
 		stage.addActor(bestScoresButton);
 	}
 
